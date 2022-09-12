@@ -1,7 +1,5 @@
 package com.yomahub.liteflow.parser.sql.vo;
 
-import com.yomahub.liteflow.util.JsonUtil;
-
 /**
  * 用于解析 RuleSourceExtData 的 VO 类，用于 sql 模式中
  *
@@ -42,6 +40,11 @@ public class SQLParserVO {
 		private String tableName = "el_table";
 
 		/**
+		 * chainName
+		 */
+		private String chainNameField = "chain_name";
+
+		/**
 		 * el 表达式相关数据
 		 */
 		private String elDataField = "el_data";
@@ -61,6 +64,15 @@ public class SQLParserVO {
 
 		public ElTable setElDataField(String elDataField) {
 			this.elDataField = elDataField;
+			return this;
+		}
+
+		public String getChainNameField() {
+			return chainNameField;
+		}
+
+		public ElTable setChainNameField(String chainNameField) {
+			this.chainNameField = chainNameField;
 			return this;
 		}
 	}
@@ -110,8 +122,4 @@ public class SQLParserVO {
 		return this;
 	}
 
-	public static void main(String[] args) {
-		String s = JsonUtil.toJsonString(new SQLParserVO());
-		System.out.println(s);
-	}
 }

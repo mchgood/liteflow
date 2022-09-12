@@ -21,7 +21,10 @@ import java.util.List;
  */
 public class JDBCHelper {
 
-	private static final String SQL_PATTERN = "SELECT {} FROM {} ";
+	private static final String SQL_PATTERN = "SELECT {},{} FROM {} ";
+
+	private static final String EL_DATA_PATTERN = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><flow><chain name=\"{}\">{}</chain></flow>";
+	private static final Integer FETCH_SIZE_MAX=1000;
 
 	private SQLParserVO sqlParserVO;
 
@@ -69,14 +72,16 @@ public class JDBCHelper {
 		ResultSet rs = null;
 
 		String elDataField = sqlParserVO.getElTable().getElDataField();
+		String chainNameField = sqlParserVO.getElTable().getChainNameField();
 		String tableName = sqlParserVO.getElTable().getTableName();
-		String sqlCmd = StrFormatter.format(SQL_PATTERN, elDataField, tableName);
+		String sqlCmd = StrFormatter.format(SQL_PATTERN, chainNameField, elDataField, tableName);
 
 		List<String> result = new ArrayList<>();
 		try {
 			conn = getConn();
 			stmt = conn.prepareStatement(sqlCmd, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			stmt.setFetchSize(Integer.MIN_VALUE);
+			// 设置游标拉取数量
+			stmt.setFetchSize(FETCH_SIZE_MAX);
 			rs = stmt.executeQuery();
 
 			while (rs.next()) {
@@ -84,7 +89,12 @@ public class JDBCHelper {
 				if (StrUtil.isBlank(elData)) {
 					throw new ELSQLException(StrFormatter.format("{} table exist {} field value is empty", tableName, elDataField));
 				}
-				result.add(elData);
+				String chainName = rs.getString(chainNameField);
+				if (StrUtil.isBlank(elData)) {
+					throw new ELSQLException(StrFormatter.format("{} table exist {} field value is empty", tableName, elDataField));
+				}
+
+				result.add(StrFormatter.format(EL_DATA_PATTERN, chainName, elData));
 			}
 		} catch (Exception e) {
 			throw new ELSQLException(e.getMessage());
