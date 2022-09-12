@@ -12,21 +12,12 @@
 
     <artifactId>liteflow-rule-sql</artifactId>
 
-    <properties>
-        <mysql-connector-java.version>5.1.48</mysql-connector-java.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.yomahub</groupId>
             <artifactId>liteflow-core</artifactId>
             <version>${revision}</version>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>${mysql-connector-java.version}</version>
         </dependency>
     </dependencies>
 </project>
