@@ -1,0 +1,43 @@
+package com.yomahub.liteflow.test.sql;
+
+import com.yomahub.liteflow.core.FlowExecutor;
+import com.yomahub.liteflow.flow.LiteflowResponse;
+import com.yomahub.liteflow.test.BaseTest;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import javax.annotation.Resource;
+
+/**
+ * @author tangkc
+ * @since 2.8.6
+ */
+@Sql(scripts = {"sql/schema.sql", "sql/data.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@RunWith(SpringRunner.class)
+@TestPropertySource(value = "classpath:/application-xml.properties")
+@SpringBootTest(classes = SQLWithXmlELSpringbootTest.class)
+@EnableAutoConfiguration
+@ComponentScan({"com.yomahub.liteflow.test.sql.cmp"})
+public class SQLWithXmlELSpringbootTest extends BaseTest {
+	@Resource
+	private FlowExecutor flowExecutor;
+
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+
+	}
+
+	@Test
+	public void testSQLWithXml() {
+		LiteflowResponse response = flowExecutor.execute2Resp("chain1", "arg");
+		Assert.assertTrue(response.isSuccess());
+	}
+}
