@@ -8,21 +8,19 @@
 package com.yomahub.liteflow.test.tag.cmp;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowComponent;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.slot.DefaultContext;
-import com.yomahub.liteflow.slot.Slot;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 
 @LiteflowComponent("b1")
-@LiteflowCmpDefine
-public class B1Cmp{
+public class B1Cmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		DefaultContext context = bindCmp.getFirstContextBean();
-		context.setData("test",new ConcurrentHashSet<String>());
+		context.setData("test", new ConcurrentHashSet<String>());
 	}
+
 }

@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.exception.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -16,13 +15,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component("g")
-@LiteflowCmpDefine
 public class GCmp {
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(GCmp.class);
-	
+
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		LOG.info("Gcomp executed!");
 	}
+
 }

@@ -1,16 +1,14 @@
 package com.yomahub.liteflow.flow.element.condition;
 
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.yomahub.liteflow.enums.ConditionTypeEnum;
-import com.yomahub.liteflow.enums.NodeTypeEnum;
-import com.yomahub.liteflow.exception.*;
+import com.yomahub.liteflow.exception.IfTargetCannotBePreOrFinallyException;
+import com.yomahub.liteflow.exception.NoIfTrueNodeException;
+import com.yomahub.liteflow.flow.element.Condition;
 import com.yomahub.liteflow.flow.element.Executable;
-import com.yomahub.liteflow.flow.element.Node;
 import com.yomahub.liteflow.slot.DataBus;
 import com.yomahub.liteflow.slot.Slot;
-import com.yomahub.liteflow.util.LiteFlowProxyUtil;
 
 /**
  * 条件Condition
@@ -20,80 +18,95 @@ import com.yomahub.liteflow.util.LiteFlowProxyUtil;
  */
 public class IfCondition extends Condition {
 
-    private Executable trueCaseExecutableItem;
+	@Override
+	public void executeCondition(Integer slotIndex) throws Exception {
+		Executable ifItem = this.getIfItem();
 
-    private Executable falseCaseExecutableItem;
+		// 提前设置 chainId，避免无法在 isAccess 方法中获取到
+		ifItem.setCurrChainId(this.getCurrChainId());
 
-    @Override
-    public void execute(Integer slotIndex) throws Exception {
-        if (ListUtil.toList(NodeTypeEnum.IF, NodeTypeEnum.IF_SCRIPT).contains(getIfNode().getType())){
-            //先执行IF节点
-            this.getIfNode().setCurrChainName(this.getCurrChainName());
-            this.getIfNode().execute(slotIndex);
+		// 先去判断isAccess方法，如果isAccess方法都返回false，整个IF表达式不执行
+		if (!ifItem.isAccess(slotIndex)) {
+			return;
+		}
 
-            Slot slot = DataBus.getSlot(slotIndex);
-            //这里可能会有spring代理过的bean，所以拿到user原始的class
-            Class<?> originalClass = LiteFlowProxyUtil.getUserClass(this.getIfNode().getInstance().getClass());
-            //拿到If执行过的结果
-            boolean ifResult = slot.getIfResult(originalClass.getName());
+		// 先执行IF节点
+		ifItem.execute(slotIndex);
 
-            if (ifResult) {
-                //trueCaseExecutableItem这个不能为空，否则执行什么呢
-                if (ObjectUtil.isNull(trueCaseExecutableItem)) {
-                    String errorInfo = StrUtil.format("[{}]:no if-true node found for the component[{}]", slot.getRequestId(), this.getIfNode().getInstance().getDisplayName());
-                    throw new NoIfTrueNodeException(errorInfo);
-                }
+		// 拿到If执行过的结果
+		boolean ifResult = ifItem.getItemResultMetaValue(slotIndex);
 
-                //trueCaseExecutableItem 不能为前置或者后置组件
-                if (trueCaseExecutableItem instanceof PreCondition || trueCaseExecutableItem instanceof FinallyCondition) {
-                    String errorInfo = StrUtil.format("[{}]:if component[{}] error, if true node cannot be pre or finally", slot.getRequestId(), this.getIfNode().getInstance().getDisplayName());
-                    throw new IfTargetCannotBePreOrFinallyException(errorInfo);
-                }
+		Executable trueCaseExecutableItem = this.getTrueCaseExecutableItem();
+		Executable falseCaseExecutableItem = this.getFalseCaseExecutableItem();
 
-                //执行trueCaseExecutableItem
-                trueCaseExecutableItem.setCurrChainName(this.getCurrChainName());
-                trueCaseExecutableItem.execute(slotIndex);
-            } else {
-                //falseCaseExecutableItem可以为null，但是不为null时就执行否的情况
-                if (ObjectUtil.isNotNull(falseCaseExecutableItem)) {
-                    //falseCaseExecutableItem 不能为前置或者后置组件
-                    if (falseCaseExecutableItem instanceof PreCondition || falseCaseExecutableItem instanceof FinallyCondition) {
-                        String errorInfo = StrUtil.format("[{}]:if component[{}] error, if true node cannot be pre or finally", slot.getRequestId(), this.getIfNode().getInstance().getDisplayName());
-                        throw new IfTargetCannotBePreOrFinallyException(errorInfo);
-                    }
+		Slot slot = DataBus.getSlot(slotIndex);
 
-                    //执行falseCaseExecutableItem
-                    falseCaseExecutableItem.setCurrChainName(this.getCurrChainName());
-                    falseCaseExecutableItem.execute(slotIndex);
-                }
-            }
-        } else {
-            throw new IfTypeErrorException("if instance must be NodeIfComponent");
-        }
-    }
+		if (ifResult) {
+			// trueCaseExecutableItem这个不能为空，否则执行什么呢
+			if (ObjectUtil.isNull(trueCaseExecutableItem)) {
+				String errorInfo = StrUtil.format("[{}]:no if-true node found for the component[{}]",
+						slot.getRequestId(), ifItem.getId());
+				throw new NoIfTrueNodeException(errorInfo);
+			}
 
-    @Override
-    public ConditionTypeEnum getConditionType() {
-        return null;
-    }
+			// trueCaseExecutableItem 不能为前置或者后置组件
+			if (trueCaseExecutableItem instanceof PreCondition
+					|| trueCaseExecutableItem instanceof FinallyCondition) {
+				String errorInfo = StrUtil.format(
+						"[{}]:if component[{}] error, if true node cannot be pre or finally", slot.getRequestId(),
+						ifItem.getId());
+				throw new IfTargetCannotBePreOrFinallyException(errorInfo);
+			}
 
-    public Executable getTrueCaseExecutableItem() {
-        return trueCaseExecutableItem;
-    }
+			// 执行trueCaseExecutableItem
+			trueCaseExecutableItem.setCurrChainId(this.getCurrChainId());
+			trueCaseExecutableItem.execute(slotIndex);
+		}
+		else {
+			// falseCaseExecutableItem可以为null，但是不为null时就执行否的情况
+			if (ObjectUtil.isNotNull(falseCaseExecutableItem)) {
+				// falseCaseExecutableItem 不能为前置或者后置组件
+				if (falseCaseExecutableItem instanceof PreCondition
+						|| falseCaseExecutableItem instanceof FinallyCondition) {
+					String errorInfo = StrUtil.format(
+							"[{}]:if component[{}] error, if true node cannot be pre or finally",
+							slot.getRequestId(), ifItem.getId());
+					throw new IfTargetCannotBePreOrFinallyException(errorInfo);
+				}
 
-    public void setTrueCaseExecutableItem(Executable trueCaseExecutableItem) {
-        this.trueCaseExecutableItem = trueCaseExecutableItem;
-    }
+				// 执行falseCaseExecutableItem
+				falseCaseExecutableItem.setCurrChainId(this.getCurrChainId());
+				falseCaseExecutableItem.execute(slotIndex);
+			}
+		}
+	}
 
-    public Executable getFalseCaseExecutableItem() {
-        return falseCaseExecutableItem;
-    }
+	@Override
+	public ConditionTypeEnum getConditionType() {
+		return ConditionTypeEnum.TYPE_IF;
+	}
 
-    public void setFalseCaseExecutableItem(Executable falseCaseExecutableItem) {
-        this.falseCaseExecutableItem = falseCaseExecutableItem;
-    }
+	public Executable getTrueCaseExecutableItem() {
+		return this.getExecutableOne(ConditionKey.IF_TRUE_CASE_KEY);
+	}
 
-    public Node getIfNode() {
-        return (Node) this.getExecutableList().get(0);
-    }
+	public void setTrueCaseExecutableItem(Executable trueCaseExecutableItem) {
+		this.addExecutable(ConditionKey.IF_TRUE_CASE_KEY, trueCaseExecutableItem);
+	}
+
+	public Executable getFalseCaseExecutableItem() {
+		return this.getExecutableOne(ConditionKey.IF_FALSE_CASE_KEY);
+	}
+
+	public void setFalseCaseExecutableItem(Executable falseCaseExecutableItem) {
+		this.addExecutable(ConditionKey.IF_FALSE_CASE_KEY, falseCaseExecutableItem);
+	}
+
+	public void setIfItem(Executable ifNode) {
+		this.addExecutable(ConditionKey.IF_KEY, ifNode);
+	}
+
+	public Executable getIfItem() {
+		return this.getExecutableOne(ConditionKey.IF_KEY);
+	}
 }

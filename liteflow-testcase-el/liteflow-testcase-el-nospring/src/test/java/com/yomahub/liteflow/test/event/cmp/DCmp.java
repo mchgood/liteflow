@@ -13,14 +13,15 @@ import com.yomahub.liteflow.slot.DefaultContext;
 public class DCmp extends NodeComponent {
 
 	@Override
-	public void process() throws Exception{
+	public void process() throws Exception {
 		System.out.println("CCmp executed!");
 		throw new NullPointerException();
 	}
 
 	@Override
-	public void onError() throws Exception {
+	public void onError(Exception e) throws Exception {
 		DefaultContext context = this.getFirstContextBean();
-		context.setData("error","error:"+this.getNodeId());
+		context.setData("error", "error:" + this.getNodeId());
 	}
+
 }

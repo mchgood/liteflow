@@ -16,8 +16,9 @@ public class BCmp extends NodeComponent {
 	@Override
 	public void process() {
 		try {
-			Thread.sleep(4000);
-		}catch (Exception ignored){
+			Thread.sleep(2000);
+		}
+		catch (Exception ignored) {
 
 		}
 		System.out.println("BCmp executed!");

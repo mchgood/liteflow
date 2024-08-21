@@ -1,6 +1,11 @@
 
 package com.yomahub.liteflow.exception;
 
+/**
+ * 链端异常
+ *
+ * @author Bryan.Zhang
+ */
 public class ChainEndException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
@@ -20,4 +25,5 @@ public class ChainEndException extends RuntimeException {
 	public void setMessage(String message) {
 		this.message = message;
 	}
+
 }

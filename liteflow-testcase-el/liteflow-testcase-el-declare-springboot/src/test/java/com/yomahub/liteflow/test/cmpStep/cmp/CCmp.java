@@ -7,18 +7,16 @@
  */
 package com.yomahub.liteflow.test.cmpStep.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 import org.springframework.stereotype.Component;
 
 @Component("c")
-@LiteflowCmpDefine
-public class CCmp{
+public class CCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
-	public void process(NodeComponent bindCmp) throws Exception{
+	public void process(NodeComponent bindCmp) throws Exception {
 		System.out.println("CCmp executed!");
 		Thread.sleep(2000);
 		throw new RuntimeException("test error c");

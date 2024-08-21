@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.useTTLInWhen.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -16,14 +15,13 @@ import com.yomahub.liteflow.test.useTTLInWhen.TestTL;
 import org.springframework.stereotype.Component;
 
 @Component("b")
-@LiteflowCmpDefine
-public class BCmp{
+public class BCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		String value = TestTL.get();
 		DefaultContext context = bindCmp.getFirstContextBean();
-		context.setData(bindCmp.getNodeId(),value+",b");
+		context.setData(bindCmp.getNodeId(), value + ",b");
 		System.out.println("BCmp executed!");
 	}
 

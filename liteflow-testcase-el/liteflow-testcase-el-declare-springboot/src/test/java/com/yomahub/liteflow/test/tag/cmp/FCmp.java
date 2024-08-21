@@ -7,15 +7,13 @@
  */
 package com.yomahub.liteflow.test.tag.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowComponent;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 
 @LiteflowComponent("f")
-@LiteflowCmpDefine
-public class FCmp{
+public class FCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process() {
@@ -26,4 +24,5 @@ public class FCmp{
 	public boolean isAccess(NodeComponent bindCmp) {
 		return Boolean.parseBoolean(bindCmp.getTag());
 	}
+
 }

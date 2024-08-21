@@ -1,5 +1,10 @@
 package com.yomahub.liteflow.exception;
 
+/**
+ * 重复解析器异常
+ *
+ * @author Yun
+ */
 public class MultipleParsersException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
@@ -19,4 +24,5 @@ public class MultipleParsersException extends RuntimeException {
 	public void setMessage(String message) {
 		this.message = message;
 	}
+
 }

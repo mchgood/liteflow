@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.event.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -15,18 +14,18 @@ import com.yomahub.liteflow.slot.DefaultContext;
 import org.springframework.stereotype.Component;
 
 @Component("d")
-@LiteflowCmpDefine
-public class DCmp{
+public class DCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
-	public void process(NodeComponent bindCmp) throws Exception{
+	public void process(NodeComponent bindCmp) throws Exception {
 		System.out.println("CCmp executed!");
 		throw new NullPointerException();
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.ON_ERROR)
-	public void onError(NodeComponent bindCmp) throws Exception {
+	public void onError(NodeComponent bindCmp, Exception e) throws Exception {
 		DefaultContext context = bindCmp.getFirstContextBean();
-		context.setData("error","error:"+bindCmp.getNodeId());
+		context.setData("error", "error:" + bindCmp.getNodeId());
 	}
+
 }

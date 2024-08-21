@@ -15,10 +15,11 @@ public class ECmp extends NodeComponent {
 	@Override
 	public void process() {
 		DefaultContext context = this.getFirstContextBean();
-		if (context.hasData(this.getNodeId())){
-			context.setData(this.getNodeId(), context.getData(this.getNodeId()) + "_" + this.getCurrChainName());
-		}else{
-			context.setData(this.getNodeId(), this.getCurrChainName());
+		if (context.hasData(this.getNodeId())) {
+			context.setData(this.getNodeId(), context.getData(this.getNodeId()) + "_" + this.getCurrChainId());
+		}
+		else {
+			context.setData(this.getNodeId(), this.getCurrChainId());
 		}
 	}
 

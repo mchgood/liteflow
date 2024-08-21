@@ -5,9 +5,10 @@ import com.yomahub.liteflow.flow.LiteflowResponse;
 import com.yomahub.liteflow.exception.MultipleParsersException;
 import com.yomahub.liteflow.property.LiteflowConfig;
 import com.yomahub.liteflow.test.BaseTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,31 +24,35 @@ import javax.annotation.Resource;
  *
  * @author Bryan.Zhang
  */
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @TestPropertySource(value = "classpath:/subflow/application-subInDifferentConfig1.properties")
 @SpringBootTest(classes = SubflowInDifferentConfigELDeclSpringbootTest.class)
 @EnableAutoConfiguration
-@ComponentScan({"com.yomahub.liteflow.test.subflow.cmp1","com.yomahub.liteflow.test.subflow.cmp2"})
+@ComponentScan({ "com.yomahub.liteflow.test.subflow.cmp1", "com.yomahub.liteflow.test.subflow.cmp2" })
 public class SubflowInDifferentConfigELDeclSpringbootTest extends BaseTest {
-    @Resource
-    private FlowExecutor flowExecutor;
 
-    //是否按照流程定义配置执行
-    @Test
-    public void testExplicitSubFlow1() {
-        LiteflowResponse response = flowExecutor.execute2Resp("chain1", "it's a request");
-        Assert.assertTrue(response.isSuccess());
-        Assert.assertEquals("a==>b==>b==>a==>e==>d", response.getExecuteStepStr());
-    }
+	@Resource
+	private FlowExecutor flowExecutor;
 
-    @Autowired
-    private ApplicationContext context;
+	// 是否按照流程定义配置执行
+	@Test
+	public void testExplicitSubFlow1() {
+		LiteflowResponse response = flowExecutor.execute2Resp("chain1", "it's a request");
+		Assertions.assertTrue(response.isSuccess());
+		Assertions.assertEquals("a==>b==>b==>a==>e==>d", response.getExecuteStepStr());
+	}
 
-    //主要测试有不同的配置类型后会不会报出既定的错误
-    @Test(expected = MultipleParsersException.class)
-    public void testExplicitSubFlow2() {
-        LiteflowConfig config = context.getBean(LiteflowConfig.class);
-        config.setRuleSource("subflow/flow-main.xml,subflow/flow-sub1.xml,subflow/flow-sub2.yml");
-        flowExecutor.init();
-    }
+	@Autowired
+	private ApplicationContext context;
+
+	// 主要测试有不同的配置类型后会不会报出既定的错误
+	@Test
+	public void testExplicitSubFlow2() {
+		Assertions.assertThrows(MultipleParsersException.class, () -> {
+			LiteflowConfig config = context.getBean(LiteflowConfig.class);
+			config.setRuleSource("subflow/flow-main.xml,   subflow/flow-sub1.xml,subflow/flow-sub2.yml");
+			flowExecutor.reloadRule();
+		});
+	}
+
 }

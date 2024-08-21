@@ -1,114 +1,178 @@
 package com.yomahub.liteflow.flow;
 
+import cn.hutool.core.collection.ListUtil;
 import com.yomahub.liteflow.exception.LiteFlowException;
 import com.yomahub.liteflow.flow.entity.CmpStep;
 import com.yomahub.liteflow.slot.Slot;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * 执行结果封装类
+ *
  * @author zend.wang
  */
-public class LiteflowResponse implements Serializable {
-    
-    private static final long serialVersionUID = -2792556188993845048L;
-    
-    private boolean success;
+public class LiteflowResponse {
 
-    private String code;
+	private String chainId;
 
-    private String message;
-    
-    private Exception cause;
-    
-    private Slot slot;
-    
-    public LiteflowResponse() {
-      this(null);
-    }
-    public LiteflowResponse(Slot slot) {
-        if (slot != null && slot.getException() != null) {
-            this.success = false;
-            this.cause = slot.getException();
-            this.message = this.cause.getMessage();
-            this.code = this.cause instanceof LiteFlowException ? ((LiteFlowException)this.cause).getCode() : null;
-        } else {
-            this.success = true;
-        }
-        this.slot = slot;
-    }
-    
-    public boolean isSuccess() {
-        return success;
-    }
-    
-    public void setSuccess(final boolean success) {
-        this.success = success;
-    }
-    
-    public String getMessage() {
-        return message;
-    }
-    
-    public void setMessage(final String message) {
-        this.message = message;
-    }
+	private boolean success;
 
-    public String getCode() {
-        return code;
-    }
+	private String code;
 
-    public void setCode(String code) {
-        this.code = code;
-    }
+	private String message;
 
-    public Exception getCause() {
-        return cause;
-    }
-    
-    public void setCause(final Exception cause) {
-        this.cause = cause;
-    }
+	private Exception cause;
 
-    public Slot getSlot() {
-        return slot;
-    }
-    
-    public void setSlot(Slot slot) {
-        this.slot = slot;
-    }
+	private Slot slot;
 
-    public <T> T getFirstContextBean(){
-        return this.getSlot().getFirstContextBean();
-    }
+	public LiteflowResponse() {
+	}
 
-    public <T> T getContextBean(Class<T> contextBeanClazz){
-        return this.getSlot().getContextBean(contextBeanClazz);
-    }
+	public static LiteflowResponse newMainResponse(Slot slot) {
+		return newResponse(slot, slot.getException());
+	}
 
-    public Map<String, CmpStep> getExecuteSteps(){
-        Map<String, CmpStep> map = new HashMap<>();
-        this.getSlot().getExecuteSteps().forEach(cmpStep -> map.put(cmpStep.getNodeId(), cmpStep));
-        return map;
-    }
+	public static LiteflowResponse newInnerResponse(String chainId, Slot slot) {
+		return newResponse(slot, slot.getSubException(chainId));
+	}
 
-    public Queue<CmpStep> getExecuteStepQueue(){
-        return this.getSlot().getExecuteSteps();
-    }
+	private static LiteflowResponse newResponse(Slot slot, Exception e) {
+		LiteflowResponse response = new LiteflowResponse();
+		response.setChainId(slot.getChainId());
+		if (e != null) {
+			response.setSuccess(false);
+			response.setCause(e);
+			response.setMessage(response.getCause().getMessage());
+			response.setCode(response.getCause() instanceof LiteFlowException
+					? ((LiteFlowException) response.getCause()).getCode() : null);
+		}
+		else {
+			response.setSuccess(true);
+		}
+		response.setSlot(slot);
+		return response;
+	}
 
-    public String getExecuteStepStr(){
-        return this.getSlot().getExecuteStepStr();
-    }
+	public boolean isSuccess() {
+		return success;
+	}
 
-    public String getExecuteStepStrWithoutTime(){
-        return this.getSlot().getExecuteStepStr(false);
-    }
+	public void setSuccess(final boolean success) {
+		this.success = success;
+	}
 
-    public String getRequestId(){
-        return this.getSlot().getRequestId();
-    }
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(final String message) {
+		this.message = message;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
+	}
+
+	public Exception getCause() {
+		return cause;
+	}
+
+	public void setCause(final Exception cause) {
+		this.cause = cause;
+	}
+
+	public Slot getSlot() {
+		return slot;
+	}
+
+	public void setSlot(Slot slot) {
+		this.slot = slot;
+	}
+
+	public <T> T getFirstContextBean() {
+		return this.getSlot().getFirstContextBean();
+	}
+
+	public <T> T getContextBean(Class<T> contextBeanClazz) {
+		return this.getSlot().getContextBean(contextBeanClazz);
+	}
+
+	public <T> T getContextBean(String contextName) {
+		return this.getSlot().getContextBean(contextName);
+	}
+
+	public Map<String, List<CmpStep>> getExecuteSteps() {
+		Map<String, List<CmpStep>> map = new LinkedHashMap<>();
+		this.getSlot().getExecuteSteps().forEach(cmpStep -> {
+			if (map.containsKey(cmpStep.getNodeId())){
+				map.get(cmpStep.getNodeId()).add(cmpStep);
+			}else{
+				map.put(cmpStep.getNodeId(), ListUtil.toList(cmpStep));
+			}
+		});
+		return map;
+	}
+
+	public Queue<CmpStep> getRollbackStepQueue() {
+		return this.getSlot().getRollbackSteps();
+	}
+
+	public String getRollbackStepStr() {
+		return getRollbackStepStrWithoutTime();
+	}
+
+	public String getRollbackStepStrWithTime() {
+		return this.getSlot().getRollbackStepStr(true);
+	}
+
+	public String getRollbackStepStrWithoutTime() {
+		return this.getSlot().getRollbackStepStr(false);
+	}
+
+	public Map<String, List<CmpStep>> getRollbackSteps() {
+		Map<String, List<CmpStep>> map = new LinkedHashMap<>();
+		this.getSlot().getRollbackSteps().forEach(cmpStep -> {
+			if (map.containsKey(cmpStep.getNodeId())){
+				map.get(cmpStep.getNodeId()).add(cmpStep);
+			}else{
+				map.put(cmpStep.getNodeId(), ListUtil.toList(cmpStep));
+			}
+		});
+		return map;
+	}
+
+	public Queue<CmpStep> getExecuteStepQueue() {
+		return this.getSlot().getExecuteSteps();
+	}
+
+	public String getExecuteStepStr() {
+		return getExecuteStepStrWithoutTime();
+	}
+
+	public String getExecuteStepStrWithTime() {
+		return this.getSlot().getExecuteStepStr(true);
+	}
+
+	public String getExecuteStepStrWithoutTime() {
+		return this.getSlot().getExecuteStepStr(false);
+	}
+
+	public String getRequestId() {
+		return this.getSlot().getRequestId();
+	}
+
+	public String getChainId() {
+		return chainId;
+	}
+
+	public void setChainId(String chainId) {
+		this.chainId = chainId;
+	}
 }

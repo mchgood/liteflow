@@ -1,44 +1,68 @@
 package com.yomahub.liteflow.enums;
 
+/**
+ * @author Yun
+ */
 public enum ConditionTypeEnum {
-    TYPE_THEN("then","then"),
-    TYPE_WHEN("when","when"),
-    TYPE_SWITCH("switch", "switch"),
 
-    TYPE_IF("if", "if"),
-    TYPE_PRE("pre","pre"),
-    TYPE_FINALLY("finally","finally")
-    ;
-    private String type;
-    private String name;
+	TYPE_THEN("then", "then"),
 
-    ConditionTypeEnum(String type, String name) {
-        this.type = type;
-        this.name = name;
-    }
+	TYPE_WHEN("when", "when"),
 
-    public String getType() {
-        return type;
-    }
+	TYPE_SWITCH("switch", "switch"),
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	TYPE_IF("if", "if"),
 
-    public String getName() {
-        return name;
-    }
+	TYPE_PRE("pre", "pre"),
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	TYPE_FINALLY("finally", "finally"),
 
-    public static ConditionTypeEnum getEnumByCode(String code) {
-        for (ConditionTypeEnum e : ConditionTypeEnum.values()) {
-            if (e.getType().equals(code)) {
-                return e;
-            }
-        }
-        return null;
-    }
+	TYPE_FOR("for", "for"),
+
+	TYPE_WHILE("while", "while"),
+
+	TYPE_ITERATOR("iterator", "iterator"),
+
+	TYPE_CATCH("catch", "catch"),
+
+	TYPE_AND_OR_OPT("and_or_opt", "and_or_opt"),
+
+	TYPE_NOT_OPT("not_opt", "not_opt"),
+
+	TYPE_ABSTRACT("abstract", "abstract");
+
+	private String type;
+
+	private String name;
+
+	ConditionTypeEnum(String type, String name) {
+		this.type = type;
+		this.name = name;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public static ConditionTypeEnum getEnumByCode(String code) {
+		for (ConditionTypeEnum e : ConditionTypeEnum.values()) {
+			if (e.getType().equals(code)) {
+				return e;
+			}
+		}
+		return null;
+	}
+
 }

@@ -8,17 +8,14 @@
 package com.yomahub.liteflow.test.tag.cmp;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowComponent;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.slot.DefaultContext;
-import com.yomahub.liteflow.slot.Slot;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 
 @LiteflowComponent("b")
-@LiteflowCmpDefine
-public class BCmp{
+public class BCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
@@ -26,4 +23,5 @@ public class BCmp{
 		ConcurrentHashSet<String> testSet = context.getData("test");
 		testSet.add(bindCmp.getTag());
 	}
+
 }

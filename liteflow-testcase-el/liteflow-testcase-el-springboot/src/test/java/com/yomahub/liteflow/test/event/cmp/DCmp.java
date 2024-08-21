@@ -9,20 +9,23 @@ package com.yomahub.liteflow.test.event.cmp;
 
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.slot.DefaultContext;
+import com.yomahub.liteflow.slot.Slot;
 import org.springframework.stereotype.Component;
 
 @Component("d")
 public class DCmp extends NodeComponent {
 
 	@Override
-	public void process() throws Exception{
+	public void process() throws Exception {
 		System.out.println("CCmp executed!");
 		throw new NullPointerException();
 	}
 
 	@Override
-	public void onError() throws Exception {
+	public void onError(Exception e) throws Exception {
+		Slot slot = this.getSlot();
 		DefaultContext context = this.getFirstContextBean();
-		context.setData("error","error:"+this.getNodeId());
+		context.setData("error", "error:" + this.getNodeId());
 	}
+
 }

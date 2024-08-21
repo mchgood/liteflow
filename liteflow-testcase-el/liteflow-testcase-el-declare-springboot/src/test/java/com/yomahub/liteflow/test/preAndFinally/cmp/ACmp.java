@@ -7,18 +7,17 @@
  */
 package com.yomahub.liteflow.test.preAndFinally.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 import org.springframework.stereotype.Component;
 
 @Component("a")
-@LiteflowCmpDefine
-public class ACmp{
+public class ACmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		System.out.println("ACmp executed!");
 	}
+
 }

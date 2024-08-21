@@ -6,34 +6,104 @@ package com.yomahub.liteflow.common;
  * @author tangkc
  */
 public interface ChainConstant {
+	String PARALLEL = "parallel";
 
-    String CHAIN = "chain";
+	String CHAIN = "chain";
 
-    String FLOW = "flow";
+	String ROUTE = "route";
 
-    String NODES = "nodes";
+	String BODY = "body";
 
-    String NODE = "node";
+	String FLOW = "flow";
 
-    String ID = "id";
+	String NODES = "nodes";
 
-    String _CLASS = "class";
+	String NODE = "node";
 
-    String FILE = "file";
+	String ID = "id";
 
-    String NAME = "name";
+	String _CLASS = "class";
 
-    String VALUE = "value";
+	String FILE = "file";
 
-    String ERROR_RESUME = "errorResume";
+	String NAME = "name";
 
-    String GROUP = "group";
+	String ENABLE = "enable";
 
-    String ANY = "any";
+	String LANGUAGE = "language";
 
-    String THREAD_EXECUTOR_CLASS = "threadExecutorClass";
+	String NAMESPACE = "namespace";
 
-    String CONDITION = "condition";
+	String DEFAULT_NAMESPACE = "default";
 
-    String TYPE = "type";
+	String VALUE = "value";
+
+	String ANY = "any";
+
+	String MUST = "must";
+
+	String TYPE = "type";
+
+	String THEN = "THEN";
+
+	String WHEN = "WHEN";
+
+	String SER = "SER";
+
+	String PAR = "PAR";
+
+	String SWITCH = "SWITCH";
+
+	String PRE = "PRE";
+
+	String FINALLY = "FINALLY";
+
+	String IF = "IF";
+
+	String ELSE = "ELSE";
+
+	String ELIF = "ELIF";
+
+	String TO = "TO";
+
+	String TAG = "tag";
+
+	String IGNORE_ERROR = "ignoreError";
+
+	String THREAD_POOL = "threadPool";
+
+	String WHILE = "WHILE";
+
+	String FOR = "FOR";
+
+	String DO = "DO";
+
+	String BREAK = "BREAK";
+
+	String DATA = "data";
+
+	String ITERATOR = "ITERATOR";
+
+	String MONITOR_BUS = "monitorBus";
+
+	String CURR_CHAIN_ID = "currChainId";
+
+	String DEFAULT = "DEFAULT";
+
+	String CATCH = "CATCH";
+
+	String AND = "AND";
+
+	String OR = "OR";
+
+	String NOT = "NOT";
+
+	String MAX_WAIT_SECONDS = "maxWaitSeconds";
+
+    String MAX_WAIT_MILLISECONDS = "maxWaitMilliseconds";
+
+	String EXTENDS = "extends";
+
+	String RETRY = "retry";
+
 }

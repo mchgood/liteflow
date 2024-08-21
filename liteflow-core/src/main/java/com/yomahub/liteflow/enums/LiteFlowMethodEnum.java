@@ -1,35 +1,57 @@
 package com.yomahub.liteflow.enums;
 
 public enum LiteFlowMethodEnum {
-    PROCESS("process"),
-    PROCESS_SWITCH("processSwitch"),
-    PROCESS_IF("processIf"),
-    IS_ACCESS("isAccess"),
 
-    IS_END("isEnd"),
-    IS_CONTINUE_ON_ERROR("isContinueOnError"),
+	PROCESS("process", true),
+	PROCESS_SWITCH("processSwitch", true),
+	PROCESS_BOOLEAN("processBoolean", true),
+	PROCESS_FOR("processFor", true),
 
-    GET_NODE_EXECUTOR_CLASS("getNodeExecutorClass"),
+	PROCESS_ITERATOR("processIterator", true),
 
-    ON_SUCCESS("onSuccess"),
+	IS_ACCESS("isAccess", false),
 
-    ON_ERROR("onError"),
+	IS_END("isEnd", false),
+	IS_CONTINUE_ON_ERROR("isContinueOnError", false),
 
-    BEFORE_PROCESS("beforeProcess"),
+	GET_NODE_EXECUTOR_CLASS("getNodeExecutorClass", false),
 
-    AFTER_PROCESS("afterProcess");
+	ON_SUCCESS("onSuccess", false),
 
-    private String methodName;
+	ON_ERROR("onError", false),
 
-    LiteFlowMethodEnum(String methodName){
-        this.methodName = methodName;
-    }
+	BEFORE_PROCESS("beforeProcess", false),
 
-    public String getMethodName() {
-        return methodName;
-    }
+	AFTER_PROCESS("afterProcess", false),
 
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
-    }
+	GET_DISPLAY_NAME("getDisplayName", false),
+
+	ROLLBACK("rollback", false)
+	;
+
+	private String methodName;
+
+	private boolean isMainMethod;
+
+	LiteFlowMethodEnum(String methodName, boolean isMainMethod) {
+		this.methodName = methodName;
+		this.isMainMethod = isMainMethod;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
+	}
+
+	public boolean isMainMethod() {
+		return isMainMethod;
+	}
+
+	public void setMainMethod(boolean mainMethod) {
+		isMainMethod = mainMethod;
+	}
+
 }

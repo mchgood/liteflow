@@ -8,272 +8,364 @@
  */
 package com.yomahub.liteflow.flow;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.StrUtil;
-import com.yomahub.liteflow.core.*;
-import com.yomahub.liteflow.exception.NullNodeTypeException;
-import com.yomahub.liteflow.flow.element.Chain;
-import com.yomahub.liteflow.flow.element.Node;
+import com.yomahub.liteflow.annotation.FallbackCmp;
+import com.yomahub.liteflow.annotation.util.AnnoUtil;
+import com.yomahub.liteflow.builder.el.LiteFlowChainELBuilder;
+import com.yomahub.liteflow.core.ComponentInitializer;
+import com.yomahub.liteflow.core.NodeComponent;
+import com.yomahub.liteflow.core.ScriptComponent;
+import com.yomahub.liteflow.core.proxy.DeclWarpBean;
 import com.yomahub.liteflow.enums.FlowParserTypeEnum;
 import com.yomahub.liteflow.enums.NodeTypeEnum;
 import com.yomahub.liteflow.exception.ComponentCannotRegisterException;
-import com.yomahub.liteflow.parser.LocalJsonFlowParser;
-import com.yomahub.liteflow.parser.LocalXmlFlowParser;
-import com.yomahub.liteflow.parser.LocalYmlFlowParser;
+import com.yomahub.liteflow.exception.NullNodeTypeException;
+import com.yomahub.liteflow.flow.element.Chain;
+import com.yomahub.liteflow.flow.element.Condition;
+import com.yomahub.liteflow.flow.element.Node;
+import com.yomahub.liteflow.log.LFLog;
+import com.yomahub.liteflow.log.LFLoggerManager;
 import com.yomahub.liteflow.parser.el.LocalJsonFlowELParser;
 import com.yomahub.liteflow.parser.el.LocalXmlFlowELParser;
 import com.yomahub.liteflow.parser.el.LocalYmlFlowELParser;
-import com.yomahub.liteflow.script.ScriptExecutor;
+import com.yomahub.liteflow.property.LiteflowConfig;
+import com.yomahub.liteflow.property.LiteflowConfigGetter;
 import com.yomahub.liteflow.script.ScriptExecutorFactory;
+import com.yomahub.liteflow.script.exception.ScriptLoadException;
 import com.yomahub.liteflow.script.exception.ScriptSpiException;
 import com.yomahub.liteflow.spi.ContextAware;
 import com.yomahub.liteflow.spi.holder.ContextAwareHolder;
-import com.yomahub.liteflow.spi.local.LocalContextAware;
+import com.yomahub.liteflow.spi.holder.DeclComponentParserHolder;
 import com.yomahub.liteflow.util.CopyOnWriteHashMap;
-import com.yomahub.liteflow.util.LiteFlowProxyUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.yomahub.liteflow.core.proxy.LiteFlowProxyUtil;
 
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 流程元数据类
+ *
  * @author Bryan.Zhang
+ * @author DaleLee
  */
 public class FlowBus {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FlowBus.class);
+	private static final LFLog LOG = LFLoggerManager.getLogger(FlowBus.class);
 
-    private static final Map<String, Chain> chainMap = new CopyOnWriteHashMap<>();
+	private static final Map<String, Chain> chainMap;
 
-    private static final Map<String, Node> nodeMap = new CopyOnWriteHashMap<>();
+	private static final Map<String, Node> nodeMap;
 
-    private FlowBus() {
+	private static final Map<String, Node> fallbackNodeMap;
+
+	private static final AtomicBoolean initStat = new AtomicBoolean(false);
+
+	static {
+		LiteflowConfig liteflowConfig = LiteflowConfigGetter.get();
+		if (liteflowConfig.getFastLoad()){
+			chainMap = new HashMap<>();
+			nodeMap = new HashMap<>();
+			fallbackNodeMap = new HashMap<>();
+		}else{
+			chainMap = new CopyOnWriteHashMap<>();
+			nodeMap = new CopyOnWriteHashMap<>();
+			fallbackNodeMap = new CopyOnWriteHashMap<>();
+		}
+	}
+
+	public static Chain getChain(String id) {
+		return chainMap.get(id);
+	}
+
+	// 这一方法主要用于第一阶段chain的预装载
+	public static void addChain(String chainName) {
+		if (!chainMap.containsKey(chainName)) {
+			chainMap.put(chainName, new Chain(chainName));
+		}
+	}
+
+	// 这个方法主要用于第二阶段的替换chain
+	public static void addChain(Chain chain) {
+		chainMap.put(chain.getChainId(), chain);
+	}
+
+	public static boolean containChain(String chainId) {
+		return chainMap.containsKey(chainId);
+	}
+
+	public static boolean needInit() {
+		return initStat.compareAndSet(false, true);
+	}
+
+	public static boolean containNode(String nodeId) {
+		return nodeMap.containsKey(nodeId);
+	}
+
+	public static void addManagedNode(String nodeId) {
+		ContextAware contextAware = ContextAwareHolder.loadContextAware();
+		if (contextAware.hasBean(nodeId)){
+			addManagedNode(nodeId, contextAware.getBean(nodeId));
+		}
+	}
+
+	/**
+	 * 添加已托管的节点（如：Spring、Solon 管理的节点）
+	 * */
+	public static void addManagedNode(String nodeId, NodeComponent nodeComponent) {
+		// 根据class来猜测类型
+		NodeTypeEnum type = NodeTypeEnum.guessType(nodeComponent.getClass());
+
+		if (type == null) {
+			throw new NullNodeTypeException(StrUtil.format("node type is null for node[{}]", nodeId));
+		}
+
+		Node node = new Node(ComponentInitializer.loadInstance()
+				.initComponent(nodeComponent, type, nodeComponent.getName(), nodeId));
+		nodeMap.put(nodeId, node);
+		addFallbackNode(node);
+	}
+
+	/**
+	 * 添加 node
+	 * @param nodeId 节点id
+	 * @param name 节点名称
+	 * @param type 节点类型
+	 * @param cmpClazz 节点组件类
+	 */
+	public static void addNode(String nodeId, String name, NodeTypeEnum type, Class<?> cmpClazz) {
+		addNode(nodeId, name, type, cmpClazz, null, null);
+	}
+
+	/**
+	 * 添加 node
+	 * @param nodeId 节点id
+	 * @param name 节点名称
+	 * @param nodeType 节点类型
+	 * @param cmpClazzStr 节点组件类路径
+	 */
+	public static void addNode(String nodeId, String name, NodeTypeEnum nodeType, String cmpClazzStr) {
+		Class<?> cmpClazz;
+		try {
+			cmpClazz = Class.forName(cmpClazzStr);
+		}
+		catch (Exception e) {
+			throw new ComponentCannotRegisterException(e.getMessage());
+		}
+		addNode(nodeId, name, nodeType, cmpClazz, null, null);
+	}
+
+	/**
+	 * 添加脚本 node
+	 * @param nodeId 节点id
+	 * @param name 节点名称
+	 * @param nodeType 节点类型
+	 * @param script 脚本
+	 */
+	public static void addScriptNode(String nodeId, String name, NodeTypeEnum nodeType, String script,
+			String language) {
+		addNode(nodeId, name, nodeType, ScriptComponent.ScriptComponentClassMap.get(nodeType), script, language);
+	}
+
+	private static void addNode(String nodeId, String name, NodeTypeEnum type, Class<?> cmpClazz, String script,
+			String language) {
+		try {
+			// 判断此类是否是声明式的组件，如果是声明式的组件，就用动态代理生成实例
+			// 如果不是声明式的，就用传统的方式进行判断
+			List<NodeComponent> cmpInstanceList = new ArrayList<>();
+			if (LiteFlowProxyUtil.isDeclareCmp(cmpClazz)) {
+				// 如果是spring体系，把原始的类往spring上下文中进行注册，那么会走到ComponentScanner中
+				// 由于ComponentScanner中已经对原始类进行了动态代理，出来的对象已经变成了动态代理类，所以这时候的bean已经是NodeComponent的子类了
+				// 所以spring体系下，无需再对这个bean做二次代理
+				// 非spring体系下，从2.11.4开始不再支持声明式组件
+				List<DeclWarpBean> declWarpBeanList = DeclComponentParserHolder.loadDeclComponentParser().parseDeclBean(cmpClazz, nodeId, name);
+
+				cmpInstanceList = declWarpBeanList.stream().map(
+						declWarpBean -> (NodeComponent)ContextAwareHolder.loadContextAware().registerDeclWrapBean(nodeId, declWarpBean)
+				).collect(Collectors.toList());
+			}
+			else {
+				// 以node方式配置，本质上是为了适配无spring的环境，如果有spring环境，其实不用这么配置
+				// 这里的逻辑是判断是否能从spring上下文中取到，如果没有spring，则就是new instance了
+				// 如果是script类型的节点，因为class只有一个，所以也不能注册进spring上下文，注册的时候需要new Instance
+				if (!type.isScript()) {
+					cmpInstanceList = ListUtil
+							.toList((NodeComponent) ContextAwareHolder.loadContextAware().registerOrGet(nodeId, cmpClazz));
+				}
+				// 如果为空
+				if (cmpInstanceList.isEmpty()) {
+					NodeComponent cmpInstance = (NodeComponent) cmpClazz.newInstance();
+					cmpInstanceList.add(cmpInstance);
+				}
+			}
+			// 进行初始化component
+			cmpInstanceList = cmpInstanceList.stream()
+					.map(cmpInstance -> ComponentInitializer.loadInstance()
+							.initComponent(cmpInstance, type, name,
+									cmpInstance.getNodeId() == null ? nodeId : cmpInstance.getNodeId()))
+					.collect(Collectors.toList());
+
+
+			// 初始化Node，把component放到Node里去
+			List<Node> nodes = cmpInstanceList.stream().map(Node::new).collect(Collectors.toList());
+
+			for (int i = 0; i < nodes.size(); i++) {
+				Node node = nodes.get(i);
+				NodeComponent cmpInstance = cmpInstanceList.get(i);
+				// 如果是脚本节点，则还要加载script脚本
+				if (type.isScript()) {
+					if (StrUtil.isNotBlank(script)) {
+						node.setScript(script);
+						node.setLanguage(language);
+						((ScriptComponent) cmpInstance).loadScript(script, language);
+					}
+					else {
+						String errorMsg = StrUtil.format("script for node[{}] is empty", nodeId);
+						throw new ScriptLoadException(errorMsg);
+					}
+				}
+
+				String activeNodeId = StrUtil.isEmpty(cmpInstance.getNodeId()) ? nodeId : cmpInstance.getNodeId();
+				nodeMap.put(activeNodeId, node);
+				addFallbackNode(node);
+			}
+		}
+		catch (Exception e) {
+			String error = StrUtil.format("component[{}] register error",
+					StrUtil.isEmpty(name) ? nodeId : StrUtil.format("{}({})", nodeId, name));
+			LOG.error(e.getMessage());
+			throw new ComponentCannotRegisterException(StrUtil.format("{} {}", error, e.getMessage()));
+		}
+	}
+
+	public static Node getNode(String nodeId) {
+		return nodeMap.get(nodeId);
+	}
+
+    // 获取某一个 chainId 下的所有 nodeId
+    public static List<Node> getNodesByChainId(String chainId) {
+        Chain chain = getChain(chainId);
+		return chain.getConditionList().stream().flatMap(
+				(Function<Condition, Stream<Node>>) condition -> condition.getAllNodeInCondition().stream()
+		).collect(Collectors.toList());
     }
 
-    public static Chain getChain(String id){
-        return chainMap.get(id);
-    }
+	public static Map<String, Node> getNodeMap() {
+		return nodeMap;
+	}
 
-    //这一方法主要用于第一阶段chain的预装载
-    public static void addChain(String chainName){
-        if (!chainMap.containsKey(chainName)){
-            chainMap.put(chainName, new Chain(chainName));
-        }
-    }
+	public static Map<String, Chain> getChainMap() {
+		return chainMap;
+	}
 
-    //这个方法主要用于第二阶段的替换chain
-    public static void addChain(Chain chain) {
-        chainMap.put(chain.getChainName(), chain);
-    }
+	public static Node getFallBackNode(NodeTypeEnum nodeType){
+		String key = StrUtil.format("FB_{}", nodeType.name());
+		return fallbackNodeMap.get(key);
+	}
 
-    public static boolean containChain(String chainId) {
-        return chainMap.containsKey(chainId);
-    }
+	public static void cleanCache() {
+		chainMap.clear();
+		nodeMap.clear();
+		fallbackNodeMap.clear();
+		cleanScriptCache();
+	}
 
-    public static boolean needInit() {
-        return MapUtil.isEmpty(chainMap);
-    }
+	public static void cleanScriptCache() {
+		// 如果引入了脚本组件SPI，则还需要清理脚本的缓存
+		try {
+			ScriptExecutorFactory.loadInstance().cleanScriptCache();
+		}
+		catch (ScriptSpiException ignored) {
+		}
+	}
 
-    public static boolean containNode(String nodeId) {
-        return nodeMap.containsKey(nodeId);
-    }
+	public static void refreshFlowMetaData(FlowParserTypeEnum type, String content) throws Exception {
+		if (type.equals(FlowParserTypeEnum.TYPE_EL_XML)) {
+			new LocalXmlFlowELParser().parse(content);
+		}
+		else if (type.equals(FlowParserTypeEnum.TYPE_EL_JSON)) {
+			new LocalJsonFlowELParser().parse(content);
+		}
+		else if (type.equals(FlowParserTypeEnum.TYPE_EL_YML)) {
+			new LocalYmlFlowELParser().parse(content);
+		}
+	}
 
-    public static void addSpringScanNode(String nodeId, NodeComponent nodeComponent) {
-        NodeTypeEnum type = null;
-        if (nodeComponent instanceof NodeSwitchComponent){
-            type = NodeTypeEnum.SWITCH;
-        } else if(nodeComponent instanceof NodeIfComponent){
-            type = NodeTypeEnum.IF;
-        }else if(nodeComponent instanceof NodeComponent) {
-            type = NodeTypeEnum.COMMON;
-        }
+	public static boolean removeChain(String chainId) {
+		if (containChain(chainId)) {
+			chainMap.remove(chainId);
+			return true;
+		}
+		else {
+			String errMsg = StrUtil.format("cannot find the chain[{}]", chainId);
+			LOG.error(errMsg);
+			return false;
+		}
+	}
 
-        if (type == null){
-            throw new NullNodeTypeException(StrUtil.format("node type is null for node[{}]", nodeId));
-        }
+	public static void removeChain(String... chainIds) {
+		Arrays.stream(chainIds).forEach(FlowBus::removeChain);
+	}
 
-        nodeMap.put(nodeId, new Node(ComponentInitializer.loadInstance().initComponent(nodeComponent, type, null, nodeId)));
-    }
+	// 移除节点
+	public static boolean removeNode(String nodeId) {
+		return nodeMap.remove(nodeId) != null;
+	}
 
-    public static void addCommonNode(String nodeId, String name, String cmpClazzStr){
-        Class<?> cmpClazz;
-        try{
-            cmpClazz = Class.forName(cmpClazzStr);
-        }catch (Exception e){
-            throw new ComponentCannotRegisterException(e.getMessage());
-        }
-        addNode(nodeId, name, NodeTypeEnum.COMMON, cmpClazz, null);
-    }
+	// 判断是否是降级组件，如果是则添加到 fallbackNodeMap
+	private static void addFallbackNode(Node node) {
+		NodeComponent nodeComponent = node.getInstance();
+		FallbackCmp fallbackCmp = AnnoUtil.getAnnotation(nodeComponent.getClass(), FallbackCmp.class);
+		if (fallbackCmp == null) {
+			return;
+		}
 
-    public static void addCommonNode(String nodeId, String name, Class<?> cmpClazz){
-        addNode(nodeId, name, NodeTypeEnum.COMMON, cmpClazz, null);
-    }
+		NodeTypeEnum nodeType = node.getType();
+		String key = StrUtil.format("FB_{}", nodeType.name());
+		fallbackNodeMap.put(key, node);
+	}
 
-    public static void addSwitchNode(String nodeId, String name, String cmpClazzStr){
-        Class<?> cmpClazz;
-        try{
-            cmpClazz = Class.forName(cmpClazzStr);
-        }catch (Exception e){
-            throw new ComponentCannotRegisterException(e.getMessage());
-        }
-        addNode(nodeId, name, NodeTypeEnum.SWITCH, cmpClazz, null);
-    }
+    // 重新加载脚本
+	public static void reloadScript(String nodeId, String script) {
+		Node node = getNode(nodeId);
+		if (node == null || !node.getType().isScript()) {
+			return;
+		}
+        // 更新脚本
+		node.setScript(script);
+		ScriptExecutorFactory.loadInstance()
+				.getScriptExecutor(node.getLanguage())
+				.load(nodeId, script);
+	}
 
-    public static void addSwitchNode(String nodeId, String name, Class<?> cmpClazz){
-        addNode(nodeId, name, NodeTypeEnum.SWITCH, cmpClazz, null);
-    }
+	// 卸载脚本节点
+	public static boolean unloadScriptNode(String nodeId) {
+		Node node = getNode(nodeId);
+		if (node == null || !node.getType().isScript()) {
+			return false;
+		}
+		// 卸载脚本
+		ScriptExecutorFactory.loadInstance()
+				.getScriptExecutor(node.getLanguage())
+				.unLoad(nodeId);
+		// 移除脚本
+		return removeNode(nodeId);
+	}
 
-    public static void addIfNode(String nodeId, String name, String cmpClazzStr){
-        Class<?> cmpClazz;
-        try{
-            cmpClazz = Class.forName(cmpClazzStr);
-        }catch (Exception e){
-            throw new ComponentCannotRegisterException(e.getMessage());
-        }
-        addNode(nodeId, name, NodeTypeEnum.IF, cmpClazz, null);
-    }
+	// 重新加载规则
+	public static void reloadChain(String chainId, String elContent) {
+		reloadChain(chainId, elContent, null);
+	}
 
-    public static void addIfNode(String nodeId, String name, Class<?> cmpClazz){
-        addNode(nodeId, name, NodeTypeEnum.IF, cmpClazz, null);
-    }
+	public static void reloadChain(String chainId, String elContent, String routeContent) {
+		LiteFlowChainELBuilder.createChain().setChainId(chainId).setEL(elContent).setRoute(routeContent).build();
+	}
 
-    public static void addCommonScriptNode(String nodeId, String name, String script){
-        addNode(nodeId, name, NodeTypeEnum.SCRIPT, ScriptComponent.class, script);
-    }
+	public static void clearStat(){
+		initStat.set(false);
+	}
 
-    public static void addSwitchScriptNode(String nodeId, String name, String script){
-        addNode(nodeId, name, NodeTypeEnum.SWITCH_SCRIPT, ScriptSwitchComponent.class, script);
-    }
-
-    public static void addIfScriptNode(String nodeId, String name, String script){
-        addNode(nodeId, name, NodeTypeEnum.IF_SCRIPT, ScriptIfComponent.class, script);
-    }
-
-    private static void addNode(String nodeId, String name, NodeTypeEnum type, Class<?> cmpClazz, String script) {
-        try {
-            //判断此类是否是声明式的组件，如果是声明式的组件，就用动态代理生成实例
-            //如果不是声明式的，就用传统的方式进行判断
-            NodeComponent cmpInstance = null;
-            if (LiteFlowProxyUtil.isDeclareCmp(cmpClazz)){
-                //这里的逻辑要仔细看下
-                //如果是spring体系，把原始的类往spring上下文中进行注册，那么会走到ComponentScanner中
-                //由于ComponentScanner中已经对原始类进行了动态代理，出来的对象已经变成了动态代理类，所以这时候的bean已经是NodeComponent的子类了
-                //所以spring体系下，无需再对这个bean做二次代理
-                //但是在非spring体系下，这个bean依旧是原来那个bean，所以需要对这个bean做一次代理
-                //这里用ContextAware的spi机制来判断是否spring体系
-                ContextAware contextAware = ContextAwareHolder.loadContextAware();
-                Object bean = ContextAwareHolder.loadContextAware().registerBean(nodeId, cmpClazz);
-                if (LocalContextAware.class.isAssignableFrom(contextAware.getClass())){
-                    cmpInstance = LiteFlowProxyUtil.proxy2NodeComponent(bean, nodeId);
-                }else {
-                    cmpInstance = (NodeComponent) bean;
-                }
-            }else{
-                //以node方式配置，本质上是为了适配无spring的环境，如果有spring环境，其实不用这么配置
-                //这里的逻辑是判断是否能从spring上下文中取到，如果没有spring，则就是new instance了
-                //如果是script类型的节点，因为class只有一个，所以也不能注册进spring上下文，注册的时候需要new Instance
-                if (!CollectionUtil.newArrayList(NodeTypeEnum.SCRIPT, NodeTypeEnum.SWITCH_SCRIPT, NodeTypeEnum.IF_SCRIPT).contains(type)){
-                    cmpInstance = (NodeComponent) ContextAwareHolder.loadContextAware().registerOrGet(nodeId, cmpClazz);
-                }
-
-                if (ObjectUtil.isNull(cmpInstance)) {
-                    cmpInstance = (NodeComponent) cmpClazz.newInstance();
-                }
-            }
-
-            //进行初始化
-            cmpInstance = ComponentInitializer.loadInstance().initComponent(cmpInstance, type, name, nodeId);
-
-            //初始化Node
-            Node node = new Node(cmpInstance);
-
-            //如果是脚本节点(普通脚本节点/条件脚本节点)，则还要加载script脚本
-            if (StrUtil.isNotBlank(script)){
-                node.setScript(script);
-                if (type.equals(NodeTypeEnum.SCRIPT)){
-                    ((ScriptComponent)cmpInstance).loadScript(script);
-                }else if(type.equals(NodeTypeEnum.SWITCH_SCRIPT)){
-                    ((ScriptSwitchComponent)cmpInstance).loadScript(script);
-                }else if(type.equals(NodeTypeEnum.IF_SCRIPT)){
-                    ((ScriptIfComponent)cmpInstance).loadScript(script);
-                }
-            }
-
-            nodeMap.put(nodeId, node);
-        } catch (Exception e) {
-            String error = StrUtil.format("component[{}] register error", StrUtil.isEmpty(name)?nodeId:StrUtil.format("{}({})",nodeId,name));
-            LOG.error(error);
-            throw new ComponentCannotRegisterException(error);
-        }
-    }
-
-    public static Node getNode(String nodeId) {
-        return nodeMap.get(nodeId);
-    }
-
-    //虽然实现了cloneable，但是还是浅copy，因为condNodeMap这个对象还是共用的。
-    //那condNodeMap共用有关系么，原则上没有关系。但是从设计理念上，以后应该要分开
-    //tag和condNodeMap这2个属性不属于全局概念，属于每个chain范围的属性
-    public static Node copyNode(String nodeId) {
-        try{
-            Node node = nodeMap.get(nodeId);
-            return node.copy();
-        }catch (Exception e){
-            return null;
-        }
-    }
-
-    public static Map<String, Node> getNodeMap(){
-        return nodeMap;
-    }
-
-    public static Map<String, Chain> getChainMap(){
-        return chainMap;
-    }
-
-    public static void cleanCache() {
-        chainMap.clear();
-        nodeMap.clear();
-        cleanScriptCache();
-    }
-
-    public static void cleanScriptCache() {
-        //如果引入了脚本组件SPI，则还需要清理脚本的缓存
-        try{
-            ScriptExecutor scriptExecutor = ScriptExecutorFactory.loadInstance().getScriptExecutor();
-            if (ObjectUtil.isNotNull(scriptExecutor)){
-                scriptExecutor.cleanCache();
-            }
-        }catch (ScriptSpiException ignored){}
-    }
-
-    public static void refreshFlowMetaData(FlowParserTypeEnum type, String content) throws Exception {
-        if (type.equals(FlowParserTypeEnum.TYPE_XML)) {
-            new LocalXmlFlowParser().parse(content);
-        } else if (type.equals(FlowParserTypeEnum.TYPE_JSON)) {
-            new LocalJsonFlowParser().parse(content);
-        } else if (type.equals(FlowParserTypeEnum.TYPE_YML)) {
-            new LocalYmlFlowParser().parse(content);
-        } else if (type.equals(FlowParserTypeEnum.TYPE_EL_XML)) {
-            new LocalXmlFlowELParser().parse(content);
-        } else if (type.equals(FlowParserTypeEnum.TYPE_EL_JSON)) {
-            new LocalJsonFlowELParser().parse(content);
-        } else if (type.equals(FlowParserTypeEnum.TYPE_EL_YML)) {
-            new LocalYmlFlowELParser().parse(content);
-        }
-    }
-
-    public static boolean removeChain(String chainId){
-        if (containChain(chainId)){
-            chainMap.remove(chainId);
-            return true;
-        }else{
-            String errMsg = StrUtil.format("cannot find the chain[{}]", chainId);
-            LOG.error(errMsg);
-            return false;
-        }
-    }
 }

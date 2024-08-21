@@ -1,42 +1,33 @@
 package com.yomahub.liteflow.builder.el.operator;
 
-import com.ql.util.express.Operator;
-import com.ql.util.express.exception.QLException;
-import com.yomahub.liteflow.exception.ELParseException;
+import com.yomahub.liteflow.builder.el.operator.base.BaseOperator;
+import com.yomahub.liteflow.builder.el.operator.base.OperatorHelper;
 import com.yomahub.liteflow.flow.element.Executable;
 import com.yomahub.liteflow.flow.element.condition.WhenCondition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.yomahub.liteflow.property.LiteflowConfig;
+import com.yomahub.liteflow.property.LiteflowConfigGetter;
 
 /**
  * EL规则中的WHEN的操作符
+ *
  * @author Bryan.Zhang
  * @since 2.8.0
  */
-public class WhenOperator extends Operator {
+public class WhenOperator extends BaseOperator<WhenCondition> {
 
-    private final Logger LOG = LoggerFactory.getLogger(this.getClass());
+	@Override
+	public WhenCondition build(Object[] objects) throws Exception {
+		OperatorHelper.checkObjectSizeGtZero(objects);
 
-    @Override
-    public WhenCondition executeInner(Object[] objects) throws Exception {
-        try {
-            if (objects.length == 0) {
-                throw new QLException("parameter error");
-            }
+		WhenCondition whenCondition = new WhenCondition();
 
-            WhenCondition whenCondition = new WhenCondition();
-            for (Object obj : objects) {
-                if (obj instanceof Executable) {
-                    whenCondition.addExecutable((Executable) obj);
-                } else {
-                    throw new QLException("parameter error");
-                }
-            }
-            return whenCondition;
-        }catch (QLException e){
-            throw e;
-        }catch (Exception e){
-            throw new ELParseException("errors occurred in EL parsing");
-        }
-    }
+		LiteflowConfig liteflowConfig = LiteflowConfigGetter.get();
+		for (Object obj : objects) {
+			OperatorHelper.checkObjMustBeCommonTypeItem(obj);
+			whenCondition.addExecutable(OperatorHelper.convert(obj, Executable.class));
+			whenCondition.setThreadExecutorClass(liteflowConfig.getThreadExecutorClass());
+		}
+		return whenCondition;
+	}
+
 }

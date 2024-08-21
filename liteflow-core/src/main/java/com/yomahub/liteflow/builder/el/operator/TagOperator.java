@@ -1,61 +1,42 @@
 package com.yomahub.liteflow.builder.el.operator;
 
-import cn.hutool.core.util.ArrayUtil;
-import com.ql.util.express.Operator;
+import cn.hutool.core.collection.ListUtil;
 import com.ql.util.express.exception.QLException;
-import com.yomahub.liteflow.core.NodeComponent;
-import com.yomahub.liteflow.exception.ELParseException;
+import com.yomahub.liteflow.builder.el.operator.base.BaseOperator;
+import com.yomahub.liteflow.builder.el.operator.base.OperatorHelper;
 import com.yomahub.liteflow.flow.FlowBus;
+import com.yomahub.liteflow.flow.element.Chain;
+import com.yomahub.liteflow.flow.element.Condition;
+import com.yomahub.liteflow.flow.element.Executable;
 import com.yomahub.liteflow.flow.element.Node;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.yomahub.liteflow.flow.element.condition.ThenCondition;
 
 /**
  * EL规则中的tag的操作符
+ *
  * @author Bryan.Zhang
  * @since 2.8.0
  */
-public class TagOperator extends Operator {
+public class TagOperator extends BaseOperator<Executable> {
 
-    private final Logger LOG = LoggerFactory.getLogger(this.getClass());
+	@Override
+	public Executable build(Object[] objects) throws Exception {
+		OperatorHelper.checkObjectSizeEqTwo(objects);
 
-    @Override
-    public Node executeInner(Object[] objects) throws Exception {
-        try {
-            if (ArrayUtil.isEmpty(objects)) {
-                throw new QLException("parameter is empty");
-            }
+		Executable refObj = OperatorHelper.convert(objects[0], Executable.class);
 
-            if (objects.length != 2) {
-                throw new QLException("parameter error");
-            }
+		String tag = OperatorHelper.convert(objects[1], String.class);
 
-            Node node;
-            if (objects[0] instanceof Node) {
-                node = (Node) objects[0];
-            } else {
-                throw new QLException("The caller must be Node item");
-            }
-
-            String tag = null;
-            if (objects[1] instanceof String) {
-                tag = objects[1].toString();
-            } else {
-                throw new QLException("the parameter must be String type");
-            }
-
-            //这里为什么要clone一个呢？
-            //因为tag是跟着chain走的。而在el上下文里的放的都是同一个node，如果多个同样的node tag不同，则这里必须copy
-            Node copyNode = FlowBus.copyNode(node.getId());
-
-            copyNode.setTag(tag);
-
-            return copyNode;
-
-        }catch (QLException e){
-            throw e;
-        }catch (Exception e){
-            throw new ELParseException("errors occurred in EL parsing");
-        }
-    }
+		//如果解析的对象是一个Chain，由于Chain对象全局唯一，无法再进行复制
+		//所以如果要给chain设置tag，则需要套上一个THEN，在THEN上面设置tag
+		if (refObj instanceof Chain){
+			ThenCondition wrapperChainCondition = new ThenCondition();
+			wrapperChainCondition.setExecutableList(ListUtil.toList(refObj));
+			wrapperChainCondition.setTag(tag);
+			return wrapperChainCondition;
+		}else{
+			refObj.setTag(tag);
+			return refObj;
+		}
+	}
 }

@@ -7,17 +7,14 @@
  */
 package com.yomahub.liteflow.test.customMethodName.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
-import com.yomahub.liteflow.slot.DefaultContext;
 import com.yomahub.liteflow.slot.Slot;
 import org.springframework.stereotype.Component;
 
 @Component("a")
-@LiteflowCmpDefine
-public class ACmp{
+public class ACmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void processAcmp(NodeComponent bindCmp) {
@@ -25,27 +22,27 @@ public class ACmp{
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.IS_ACCESS)
-	public boolean isAcmpAccess(NodeComponent bindCmp){
+	public boolean isAcmpAccess(NodeComponent bindCmp) {
 		return true;
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.BEFORE_PROCESS)
-	public void beforeAcmp(String nodeId, Slot slot){
+	public void beforeAcmp(NodeComponent bindCmp) {
 		System.out.println("before A");
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.AFTER_PROCESS)
-	public void afterAcmp(String nodeId, Slot slot){
+	public void afterAcmp(NodeComponent bindCmp) {
 		System.out.println("after A");
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.ON_SUCCESS)
-	public void onAcmpSuccess(NodeComponent bindCmp){
+	public void onAcmpSuccess(NodeComponent bindCmp) {
 		System.out.println("Acmp success");
 	}
 
 	@LiteflowMethod(LiteFlowMethodEnum.ON_ERROR)
-	public void onAcmpError(NodeComponent bindCmp){
+	public void onAcmpError(NodeComponent bindCmp) {
 		System.out.println("Acmp error");
 	}
 
@@ -54,4 +51,5 @@ public class ACmp{
 		System.out.println("Acmp end config");
 		return false;
 	}
+
 }

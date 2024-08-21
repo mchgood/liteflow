@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.cmpRetry.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowComponent;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.annotation.LiteflowRetry;
@@ -15,9 +14,8 @@ import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 
 @LiteflowComponent("e")
-@LiteflowRetry(retry = 5, forExceptions = {NullPointerException.class})
-@LiteflowCmpDefine
-public class ECmp{
+@LiteflowRetry(retry = 5, forExceptions = { NullPointerException.class })
+public class ECmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {

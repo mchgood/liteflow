@@ -1,5 +1,10 @@
 package com.yomahub.liteflow.exception;
 
+/**
+ * 组件不可访问异常
+ *
+ * @author Bryan.Zhang
+ */
 public class ComponentNotAccessException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
@@ -19,4 +24,5 @@ public class ComponentNotAccessException extends RuntimeException {
 	public void setMessage(String message) {
 		this.message = message;
 	}
+
 }

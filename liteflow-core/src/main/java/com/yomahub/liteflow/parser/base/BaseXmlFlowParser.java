@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-
 /**
  * 基类，用于存放 XmlFlowParser 通用方法
  *
  * @author tangkc
  */
 public abstract class BaseXmlFlowParser implements FlowParser {
+
 	private final Set<String> CHAIN_NAME_SET = new HashSet<>();
 
 	public void parse(String content) throws Exception {
@@ -36,13 +36,12 @@ public abstract class BaseXmlFlowParser implements FlowParser {
 			documentList.add(document);
 		}
 
-		Consumer<Element> parseOneChainConsumer = this::parseOneChain;
-		ParserHelper.parseDocument(documentList, CHAIN_NAME_SET, parseOneChainConsumer);
+		ParserHelper.parseNodeDocument(documentList);
+		ParserHelper.parseChainDocument(documentList, CHAIN_NAME_SET, this::parseOneChain);
 	}
 
 	/**
 	 * 解析一个 chain 的过程
-	 *
 	 * @param chain chain
 	 */
 	public abstract void parseOneChain(Element chain);

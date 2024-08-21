@@ -8,7 +8,6 @@
 package com.yomahub.liteflow.test.exception.cmp;
 
 import cn.hutool.core.util.StrUtil;
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -17,15 +16,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component("a")
-@LiteflowCmpDefine
-public class ACmp{
-	
+public class ACmp {
+
 	private static final Logger LOG = LoggerFactory.getLogger(ACmp.class);
-	
+
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		String str = bindCmp.getRequestData();
-		if(StrUtil.isNotBlank(str) && str.equals("exception")) {
+		if (StrUtil.isNotBlank(str) && str.equals("exception")) {
 			throw new RuntimeException("chain execute execption");
 		}
 		LOG.info("Acomp executed!");

@@ -10,142 +10,234 @@ package com.yomahub.liteflow.flow.entity;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.CmpStepTypeEnum;
+import com.yomahub.liteflow.flow.element.Node;
+
+import java.util.Date;
 
 /**
  * 组件步骤对象
+ *
  * @author Bryan.Zhang
  */
 public class CmpStep {
 
-    private String nodeId;
+	private String nodeId;
 
-    private String nodeName;
+	private String nodeName;
 
-    private String tag;
+	private String tag;
 
-    private CmpStepTypeEnum stepType;
+	private CmpStepTypeEnum stepType;
 
-    //消耗的时间，毫秒为单位
-    private Long timeSpent;
+	private Date startTime;
 
-    //是否成功
-    private boolean success;
+	private Date endTime;
 
-    //有exception，success一定为false
-    //但是success为false，不一定有exception，因为有可能没执行到，或者没执行结束(any)
-    private Exception exception;
+	// 消耗的时间，毫秒为单位
+	private Long timeSpent;
 
-    public CmpStep(String nodeId, String nodeName, CmpStepTypeEnum stepType) {
-        this.nodeId = nodeId;
-        this.nodeName = nodeName;
-        this.stepType = stepType;
-    }
+	// 是否成功
+	private boolean success;
 
-    public String getNodeId() {
-        return nodeId;
-    }
+	// 有exception，success一定为false
+	// 但是success为false，不一定有exception，因为有可能没执行到，或者没执行结束(any)
+	private Exception exception;
 
-    public void setNodeId(String nodeId) {
-        this.nodeId = nodeId;
-    }
+	private NodeComponent instance;
 
-    public CmpStepTypeEnum getStepType() {
-        return stepType;
-    }
+	// 回滚消耗的时间
+	private Long rollbackTimeSpent;
 
-    public void setStepType(CmpStepTypeEnum stepType) {
-        this.stepType = stepType;
-    }
+	// 当前执行的node
+	private Node refNode;
 
-    public String getNodeName() {
-        return nodeName;
-    }
 
-    public void setNodeName(String nodeName) {
-        this.nodeName = nodeName;
-    }
+	public CmpStep(String nodeId, String nodeName, CmpStepTypeEnum stepType) {
+		this.nodeId = nodeId;
+		this.nodeName = nodeName;
+		this.stepType = stepType;
+	}
 
-    public Long getTimeSpent() {
-        return timeSpent;
-    }
+	public String getNodeId() {
+		return nodeId;
+	}
 
-    public void setTimeSpent(Long timeSpent) {
-        this.timeSpent = timeSpent;
-    }
+	public void setNodeId(String nodeId) {
+		this.nodeId = nodeId;
+	}
 
-    public boolean isSuccess() {
-        return success;
-    }
+	public CmpStepTypeEnum getStepType() {
+		return stepType;
+	}
 
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
+	public void setStepType(CmpStepTypeEnum stepType) {
+		this.stepType = stepType;
+	}
 
-    public Exception getException() {
-        return exception;
-    }
+	public String getNodeName() {
+		return nodeName;
+	}
 
-    public void setException(Exception exception) {
-        this.exception = exception;
-    }
+	public void setNodeName(String nodeName) {
+		this.nodeName = nodeName;
+	}
 
-    public String buildString() {
-        if (stepType.equals(CmpStepTypeEnum.SINGLE)) {
-        	if (StrUtil.isBlank(nodeName)){
+	public Long getTimeSpent() {
+		return timeSpent;
+	}
+
+	public void setTimeSpent(Long timeSpent) {
+		this.timeSpent = timeSpent;
+	}
+
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
+
+	public Exception getException() {
+		return exception;
+	}
+
+	public void setException(Exception exception) {
+		this.exception = exception;
+	}
+
+	public NodeComponent getInstance() {
+		return instance;
+	}
+
+	public void setInstance(NodeComponent instance) {
+		this.instance = instance;
+	}
+
+	public Long getRollbackTimeSpent() {
+		return rollbackTimeSpent;
+	}
+
+	public void setRollbackTimeSpent(Long rollbackTimeSpent) {
+		this.rollbackTimeSpent = rollbackTimeSpent;
+	}
+
+	public Node getRefNode() {
+		return refNode;
+	}
+
+	public void setRefNode(Node refNode) {
+		this.refNode = refNode;
+	}
+
+	public String buildString() {
+		if (stepType.equals(CmpStepTypeEnum.SINGLE)) {
+			if (StrUtil.isBlank(nodeName)) {
 				return StrUtil.format("{}", nodeId);
-			}else{
+			}
+			else {
 				return StrUtil.format("{}[{}]", nodeId, nodeName);
 			}
-        } else {
-        	//目前没有其他的类型
-            return null;
-        }
-    }
+		}
+		else {
+			// 目前没有其他的类型
+			return null;
+		}
+	}
 
-    public String buildStringWithTime() {
-        if (stepType.equals(CmpStepTypeEnum.SINGLE)) {
-            if (StrUtil.isBlank(nodeName)){
-                if (timeSpent != null){
-                    return StrUtil.format("{}<{}>", nodeId, timeSpent);
-                }else{
-                    return StrUtil.format("{}", nodeId);
-                }
-            }else{
-                if (timeSpent != null){
-                    return StrUtil.format("{}[{}]<{}>", nodeId, nodeName, timeSpent);
-                }else{
-                    return StrUtil.format("{}[{}]", nodeId, nodeName);
-                }
-            }
-        } else {
-            //目前没有其他的类型
-            return null;
-        }
-    }
+	public String buildStringWithTime() {
+		if (stepType.equals(CmpStepTypeEnum.SINGLE)) {
+			if (StrUtil.isBlank(nodeName)) {
+				if (timeSpent != null) {
+					return StrUtil.format("{}<{}>", nodeId, timeSpent);
+				}
+				else {
+					return StrUtil.format("{}", nodeId);
+				}
+			}
+			else {
+				if (timeSpent != null) {
+					return StrUtil.format("{}[{}]<{}>", nodeId, nodeName, timeSpent);
+				}
+				else {
+					return StrUtil.format("{}[{}]", nodeId, nodeName);
+				}
+			}
+		}
+		else {
+			// 目前没有其他的类型
+			return null;
+		}
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (ObjectUtil.isNull(obj)) {
-            return false;
-        } else {
-            if (getClass() != obj.getClass()) {
-                return false;
-            } else {
-                if (((CmpStep) obj).getNodeId().equals(this.getNodeId())) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
+	public String buildRollbackStringWithTime() {
+		if (stepType.equals(CmpStepTypeEnum.SINGLE)) {
+			if (StrUtil.isBlank(nodeName)) {
+				if (rollbackTimeSpent != null) {
+					return StrUtil.format("{}<{}>", nodeId, rollbackTimeSpent);
+				}
+				else {
+					return StrUtil.format("{}", nodeId);
+				}
+			}
+			else {
+				if (rollbackTimeSpent != null) {
+					return StrUtil.format("{}[{}]<{}>", nodeId, nodeName, rollbackTimeSpent);
+				}
+				else {
+					return StrUtil.format("{}[{}]", nodeId, nodeName);
+				}
+			}
+		}
+		else {
+			// 目前没有其他的类型
+			return null;
+		}
+	}
 
-    public String getTag() {
-        return tag;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (ObjectUtil.isNull(obj)) {
+			return false;
+		}
+		else {
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			else {
+				if (((CmpStep) obj).getNodeId().equals(this.getNodeId())) {
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+		}
+	}
 
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
+	public String getTag() {
+		return tag;
+	}
+
+	public void setTag(String tag) {
+		this.tag = tag;
+	}
+
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
 }

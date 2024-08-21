@@ -1,25 +1,48 @@
 package com.yomahub.liteflow.core;
 
-import com.yomahub.liteflow.script.ScriptExecutorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.yomahub.liteflow.enums.NodeTypeEnum;
+import com.yomahub.liteflow.script.ScriptExecuteWrap;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 脚本组件类
+ * 脚本接口
+ *
  * @author Bryan.Zhang
- * @since 2.6.0
+ * @since 2.9.0
  */
-public class ScriptComponent extends NodeComponent{
+public interface ScriptComponent {
 
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
+	/**
+	 * 用于维护脚本类型和脚本 cmp 的映射关系
+	 */
+	Map<NodeTypeEnum, Class<?>> ScriptComponentClassMap = new HashMap<NodeTypeEnum, Class<?>>() {
+		{
+			put(NodeTypeEnum.SCRIPT, ScriptCommonComponent.class);
+			put(NodeTypeEnum.SWITCH_SCRIPT, ScriptSwitchComponent.class);
+			put(NodeTypeEnum.BOOLEAN_SCRIPT, ScriptBooleanComponent.class);
+			put(NodeTypeEnum.FOR_SCRIPT, ScriptForComponent.class);
+		}
+	};
 
-    @Override
-    public void process() throws Exception {
-        ScriptExecutorFactory.loadInstance().getScriptExecutor().execute(this.getCurrChainName(), getNodeId(), getSlotIndex());
-    }
+	/**
+	 * 加载脚本
+	 * @param script
+	 */
+	void loadScript(String script, String language);
 
-    public void loadScript(String script) {
-        log.info("load script for component[{}]", getDisplayName());
-        ScriptExecutorFactory.loadInstance().getScriptExecutor().load(getNodeId(), script);
-    }
+	default ScriptExecuteWrap buildWrap(NodeComponent cmp){
+		ScriptExecuteWrap wrap = new ScriptExecuteWrap();
+		wrap.setCurrChainId(cmp.getCurrChainId());
+		wrap.setNodeId(cmp.getNodeId());
+		wrap.setSlotIndex(cmp.getSlotIndex());
+		wrap.setTag(cmp.getTag());
+		wrap.setCmpData(cmp.getCmpData(Map.class));
+		wrap.setLoopIndex(cmp.getLoopIndex());
+		wrap.setLoopObject(cmp.getCurrLoopObj());
+		wrap.setCmp(cmp);
+		return wrap;
+	}
+
 }

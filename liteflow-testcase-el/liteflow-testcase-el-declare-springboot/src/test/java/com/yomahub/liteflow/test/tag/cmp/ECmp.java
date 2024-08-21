@@ -7,19 +7,18 @@
  */
 package com.yomahub.liteflow.test.tag.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowComponent;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
 
 @LiteflowComponent("e")
-@LiteflowCmpDefine
-public class ECmp{
+public class ECmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		System.out.println(bindCmp.getTag());
 		System.out.println("ECmp executed!");
 	}
+
 }

@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.event.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -15,13 +14,12 @@ import com.yomahub.liteflow.slot.DefaultContext;
 import org.springframework.stereotype.Component;
 
 @Component("a")
-@LiteflowCmpDefine
-public class ACmp{
+public class ACmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		DefaultContext context = bindCmp.getFirstContextBean();
-		context.setData("test","");
+		context.setData("test", "");
 		System.out.println("ACmp executed!");
 	}
 
@@ -32,4 +30,5 @@ public class ACmp{
 		str += bindCmp.getNodeId();
 		context.setData("test", str);
 	}
+
 }

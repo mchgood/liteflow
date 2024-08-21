@@ -1,6 +1,18 @@
 {
   "properties": [
     {
+      "name": "liteflow.rule-source-ext-data",
+      "type": "java.lang.String",
+      "description": "rule source extended data.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty"
+    },
+    {
+      "name": "liteflow.rule-source-ext-data-map",
+      "type": "java.util.Map",
+      "description": "rule source extended data map.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty"
+    },
+    {
       "name": "liteflow.request-id-generator-class",
       "type": "java.lang.String",
       "description": "Custom requestId builder.",
@@ -27,13 +39,6 @@
       "description": "Whether to print liteflow banner.",
       "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
       "defaultValue": true
-    },
-    {
-      "name": "liteflow.zk-node",
-      "type": "java.lang.String",
-      "description": "Node definition for ZK configuration.",
-      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
-      "defaultValue": "/lite-flow/flow"
     },
     {
       "name": "liteflow.slot-size",
@@ -68,7 +73,21 @@
       "type": "java.lang.Integer",
       "description": "Set the async thread max wait seconds on \" when \" mode.",
       "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
-      "defaultValue": 15
+      "defaultValue": 0
+    },
+    {
+      "name": "liteflow.when-max-wait-time",
+      "type": "java.lang.Integer",
+      "description": "Set the async thread max wait time on \" when \" mode.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": 15000
+    },
+    {
+      "name": "liteflow.when-max-wait-time-unit",
+      "type": "java.util.concurrent.TimeUnit",
+      "description": "Set the async thread max wait time unit on \" when \" mode.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": "MILLISECONDS"
     },
     {
       "name": "liteflow.when-max-workers",
@@ -85,11 +104,18 @@
       "defaultValue": 512
     },
     {
-      "name": "liteflow.parse-on-start",
+      "name": "liteflow.when-thread-pool-isolate",
       "type": "java.lang.Boolean",
-      "description": "Set whether the rule file needs to be parsed at startup.",
+      "description": "set whether the asynchronous thread pool is isolated.",
       "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
-      "defaultValue": true
+      "defaultValue": false
+    },
+    {
+      "name": "liteflow.parse-mode",
+      "type": "com.yomahub.liteflow.enums.ParseModeEnum",
+      "description": "Set parse mode at startup.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": "PARSE_ALL_ON_START"
     },
     {
       "name": "liteflow.retry-count",
@@ -120,11 +146,18 @@
       "defaultValue": true
     },
     {
-      "name": "liteflow.substitute-cmp-class",
-      "type": "java.lang.String",
-      "description": "substitute component class.",
+      "name": "liteflow.fallback-cmp-enable",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable component fallback.",
       "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
-      "defaultValue": ""
+      "defaultValue": false
+    },
+    {
+      "name": "liteflow.fast-load",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable fast load mode.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": false
     },
     {
       "name": "liteflow.monitor.enable-log",
@@ -153,6 +186,34 @@
       "description": "Set period time to print monitor log.",
       "sourceType": "com.yomahub.liteflow.springboot.LiteflowMonitorProperty",
       "defaultValue": 300000
+    },
+    {
+      "name": "liteflow.enable-monitor-file",
+      "type": "java.lang.Boolean",
+      "description": "Set file change monitoring.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowMonitorProperty",
+      "defaultValue": false
+    },
+    {
+      "name": "liteflow.parallel-max-workers",
+      "type": "java.lang.Integer",
+      "description": "Set the async thread pool worker max-size on \" parallel-loop \" mode.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": 16
+    },
+    {
+      "name": "liteflow.parallel-queue-limit",
+      "type": "java.lang.Integer",
+      "description": "Set the async thread pool queue max-size on \" parallel-loop \" mode.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": 512
+    },
+    {
+      "name": "liteflow.parallel-loop-executor-class",
+      "type": "java.lang.String",
+      "description": "Custom thread pool implement for parallel-loop executor.",
+      "sourceType": "com.yomahub.liteflow.springboot.LiteflowProperty",
+      "defaultValue": "com.yomahub.liteflow.thread.LiteFlowDefaultParallelLoopExecutorBuilder"
     }
   ]
 }

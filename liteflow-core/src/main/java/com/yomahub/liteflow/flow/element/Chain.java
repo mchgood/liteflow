@@ -9,14 +9,15 @@
 package com.yomahub.liteflow.flow.element;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.BooleanUtil;
+import com.yomahub.liteflow.builder.el.LiteFlowChainELBuilder;
 import com.yomahub.liteflow.exception.ChainEndException;
+import com.yomahub.liteflow.log.LFLog;
+import com.yomahub.liteflow.log.LFLoggerManager;
 import com.yomahub.liteflow.slot.DataBus;
 import com.yomahub.liteflow.slot.Slot;
-import com.yomahub.liteflow.enums.ExecuteTypeEnum;
+import com.yomahub.liteflow.enums.ExecuteableTypeEnum;
 import com.yomahub.liteflow.exception.FlowSystemException;
-import com.yomahub.liteflow.flow.element.condition.Condition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,114 +26,183 @@ import java.util.List;
  *
  * @author Bryan.Zhang
  */
-public class Chain implements Executable {
+public class Chain implements Executable{
 
-    private static final Logger LOG = LoggerFactory.getLogger(Chain.class);
+	private static final LFLog LOG = LFLoggerManager.getLogger(Chain.class);
 
-    private String chainName;
+	private String chainId;
 
-    private List<Condition> conditionList = new ArrayList<>();
+	private Executable routeItem;
 
-    //前置处理Condition，用来区别主体的Condition
-    private List<Condition> preConditionList = new ArrayList<>();
+	private List<Condition> conditionList = new ArrayList<>();
 
-    //后置处理Condition，用来区别主体的Condition
-    private List<Condition> finallyConditionList = new ArrayList<>();
+	private String el;
 
-    public Chain(String chainName){
-        this.chainName = chainName;
-    }
+	private boolean isCompiled = true;
 
-    public Chain(){}
+	private String namespace;
 
-    public Chain(String chainName, List<Condition> conditionList) {
-        this.chainName = chainName;
-        this.conditionList = conditionList;
-    }
+	public Chain(String chainName) {
+		this.chainId = chainName;
+	}
 
-    public List<Condition> getConditionList() {
-        return conditionList;
-    }
+	public Chain() {
+	}
 
-    public void setConditionList(List<Condition> conditionList) {
-        this.conditionList = conditionList;
-    }
+	public Chain(String chainName, List<Condition> conditionList) {
+		this.chainId = chainName;
+		this.conditionList = conditionList;
+	}
 
-    public String getChainName() {
-        return chainName;
-    }
+	public List<Condition> getConditionList() {
+		return conditionList;
+	}
 
-    public void setChainName(String chainName) {
-        this.chainName = chainName;
-    }
+	public void setConditionList(List<Condition> conditionList) {
+		this.conditionList = conditionList;
+	}
 
-    //执行chain的主方法
-    @Override
-    public void execute(Integer slotIndex) throws Exception {
-        if (CollUtil.isEmpty(conditionList)) {
-            throw new FlowSystemException("no conditionList in this chain[" + chainName + "]");
-        }
-        Slot slot = DataBus.getSlot(slotIndex);
-        try {
-            //设置主ChainName
-            slot.setChainName(chainName);
-            //执行前置
-            this.executePre(slotIndex);
-            //执行主体Condition
-            for (Condition condition : conditionList) {
-                condition.setCurrChainName(chainName);
-                condition.execute(slotIndex);
-            }
-        }catch (ChainEndException e){
-            //这里单独catch ChainEndException是因为ChainEndException是用户自己setIsEnd抛出的异常
-            //是属于正常逻辑，所以会在FlowExecutor中判断。这里不作为异常处理
-            throw e;
-        }catch (Exception e){
-            //这里事先取到exception set到slot里，为了方便finally取到exception
-            slot.setException(e);
-            throw e;
-        }finally {
-            //执行后置
-            this.executeFinally(slotIndex);
-        }
-    }
+	/**
+	 * @deprecated 请使用{@link #getChainId()}
+	 */
+	@Deprecated
+	public String getChainName() {
+		return chainId;
+	}
 
-    // 执行pre节点
-    private void executePre(Integer slotIndex) throws Exception {
-        for (Condition condition : this.preConditionList){
-            condition.execute(slotIndex);
-        }
-    }
+	/**
+	 * @param chainName
+	 * @deprecated 请使用 {@link #setChainId(String)}
+	 */
+	public void setChainName(String chainName) {
+		this.chainId = chainName;
+	}
 
-    //执行后置
-    private void executeFinally(Integer slotIndex) throws Exception {
-        for (Condition condition : this.finallyConditionList){
-            condition.execute(slotIndex);
-        }
-    }
+	public String getChainId() {
+		return chainId;
+	}
 
-    @Override
-    public ExecuteTypeEnum getExecuteType() {
-        return ExecuteTypeEnum.CHAIN;
-    }
+	public void setChainId(String chainId) {
+		this.chainId = chainId;
+	}
 
-    @Override
-    public String getExecuteName() {
-        return chainName;
-    }
-    public List<Condition> getPreConditionList() {
-        return preConditionList;
-    }
+	// 执行chain的主方法
+	@Override
+	public void execute(Integer slotIndex) throws Exception {
+		if (BooleanUtil.isFalse(isCompiled)) {
+			LiteFlowChainELBuilder.buildUnCompileChain(this);
+		}
 
-    public void setPreConditionList(List<Condition> preConditionList) {
-        this.preConditionList = preConditionList;
-    }
+		if (CollUtil.isEmpty(conditionList)) {
+			throw new FlowSystemException("no conditionList in this chain[" + chainId + "]");
+		}
+		Slot slot = DataBus.getSlot(slotIndex);
+		try {
+			// 设置主ChainName
+			slot.setChainId(chainId);
+			// 执行主体Condition
+			for (Condition condition : conditionList) {
+				condition.setCurrChainId(chainId);
+				condition.execute(slotIndex);
+			}
+		}
+		catch (ChainEndException e) {
+			// 这里单独catch ChainEndException是因为ChainEndException是用户自己setIsEnd抛出的异常
+			// 是属于正常逻辑，所以会在FlowExecutor中判断。这里不作为异常处理
+			throw e;
+		}
+		catch (Exception e) {
+			// 这里事先取到exception set到slot里，为了方便finally取到exception
+			if (slot.isSubChain(chainId)) {
+				slot.setSubException(chainId, e);
+			}
+			else {
+				slot.setException(e);
+			}
+			throw e;
+		}
+	}
 
-    public List<Condition> getFinallyConditionList() {
-        return finallyConditionList;
-    }
+	public void executeRoute(Integer slotIndex) throws Exception {
+		if (routeItem == null) {
+			throw new FlowSystemException("no route condition or node in this chain[" + chainId + "]");
+		}
+		Slot slot = DataBus.getSlot(slotIndex);
+		try {
+			// 设置主ChainName
+			slot.setChainId(chainId);
 
-    public void setFinallyConditionList(List<Condition> finallyConditionList) {
-        this.finallyConditionList = finallyConditionList;
-    }
+			// 执行决策路由
+			routeItem.setCurrChainId(chainId);
+			routeItem.execute(slotIndex);
+
+			boolean routeResult = routeItem.getItemResultMetaValue(slotIndex);
+
+			slot.setRouteResult(routeResult);
+		}
+		catch (ChainEndException e) {
+			throw e;
+		}
+		catch (Exception e) {
+			slot.setException(e);
+			throw e;
+		}
+	}
+
+	@Override
+	public ExecuteableTypeEnum getExecuteType() {
+		return ExecuteableTypeEnum.CHAIN;
+	}
+
+	@Override
+	public void setId(String id) {
+		this.chainId = id;
+	}
+
+	@Override
+	public String getId() {
+		return chainId;
+	}
+
+	@Override
+	public void setTag(String tag) {
+		//do nothing
+	}
+
+	@Override
+	public String getTag() {
+		return null;
+	}
+
+	public Executable getRouteItem() {
+		return routeItem;
+	}
+
+	public void setRouteItem(Executable routeItem) {
+		this.routeItem = routeItem;
+	}
+
+	public String getEl() {
+		return el;
+	}
+
+	public void setEl(String el) {
+		this.el = el;
+	}
+
+	public boolean isCompiled() {
+		return isCompiled;
+	}
+
+	public void setCompiled(boolean compiled) {
+		isCompiled = compiled;
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
 }

@@ -18,8 +18,40 @@
         <module>liteflow-testcase-el-springboot</module>
         <module>liteflow-testcase-el-springnative</module>
         <module>liteflow-testcase-el-nospring</module>
+        <module>liteflow-testcase-el-solon</module>
         <module>liteflow-testcase-el-declare-springboot</module>
+        <module>liteflow-testcase-el-declare-multi-springboot</module>
         <module>liteflow-testcase-el-script-groovy-springboot</module>
         <module>liteflow-testcase-el-script-qlexpress-springboot</module>
+        <module>liteflow-testcase-el-script-javascript-springboot</module>
+        <module>liteflow-testcase-el-script-graaljs-springboot</module>
+        <module>liteflow-testcase-el-zk-springboot</module>
+        <module>liteflow-testcase-el-sql-springboot</module>
+        <module>liteflow-testcase-el-nacos-springboot</module>
+        <module>liteflow-testcase-el-etcd-springboot</module>
+        <module>liteflow-testcase-el-apollo-springboot</module>
+        <module>liteflow-testcase-el-redis-springboot</module>
+        <module>liteflow-testcase-el-script-python-springboot</module>
+        <module>liteflow-testcase-el-script-lua-springboot</module>
+        <module>liteflow-testcase-el-script-multi-language-springboot</module>
+        <module>liteflow-testcase-el-script-aviator-springboot</module>
+        <module>liteflow-testcase-el-sql-springboot-dynamic</module>
+        <module>liteflow-testcase-el-script-java-springboot</module>
+        <module>liteflow-testcase-el-builder</module>
+        <module>liteflow-testcase-el-routechain</module>
+        <module>liteflow-testcase-el-script-kotlin-springboot</module>
     </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

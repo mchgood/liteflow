@@ -1,5 +1,10 @@
 package com.yomahub.liteflow.exception;
 
+/**
+ * 错误支持路径异常
+ *
+ * @author Yun
+ */
 public class ErrorSupportPathException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
@@ -19,4 +24,5 @@ public class ErrorSupportPathException extends RuntimeException {
 	public void setMessage(String message) {
 		this.message = message;
 	}
+
 }

@@ -7,7 +7,6 @@
  */
 package com.yomahub.liteflow.test.getChainName.cmp;
 
-import com.yomahub.liteflow.annotation.LiteflowCmpDefine;
 import com.yomahub.liteflow.annotation.LiteflowMethod;
 import com.yomahub.liteflow.core.NodeComponent;
 import com.yomahub.liteflow.enums.LiteFlowMethodEnum;
@@ -15,12 +14,12 @@ import com.yomahub.liteflow.slot.DefaultContext;
 import org.springframework.stereotype.Component;
 
 @Component("k")
-@LiteflowCmpDefine
 public class KCmp {
 
 	@LiteflowMethod(LiteFlowMethodEnum.PROCESS)
 	public void process(NodeComponent bindCmp) {
 		DefaultContext context = bindCmp.getFirstContextBean();
-		context.setData(bindCmp.getNodeId(), bindCmp.getCurrChainName());
+		context.setData(bindCmp.getNodeId(), bindCmp.getCurrChainId());
 	}
+
 }

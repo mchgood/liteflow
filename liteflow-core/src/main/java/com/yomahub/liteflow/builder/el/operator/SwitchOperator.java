@@ -1,56 +1,32 @@
 package com.yomahub.liteflow.builder.el.operator;
 
 import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.util.ArrayUtil;
-import com.ql.util.express.Operator;
 import com.ql.util.express.exception.QLException;
+import com.yomahub.liteflow.builder.el.operator.base.BaseOperator;
+import com.yomahub.liteflow.builder.el.operator.base.OperatorHelper;
 import com.yomahub.liteflow.enums.NodeTypeEnum;
-import com.yomahub.liteflow.exception.ELParseException;
 import com.yomahub.liteflow.flow.element.Node;
 import com.yomahub.liteflow.flow.element.condition.SwitchCondition;
-import com.yomahub.liteflow.flow.element.condition.WhenCondition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * EL规则中的SWITCH的操作符
+ *
  * @author Bryan.Zhang
  * @since 2.8.0
  */
-public class SwitchOperator extends Operator {
+public class SwitchOperator extends BaseOperator<SwitchCondition> {
 
-    private final Logger LOG = LoggerFactory.getLogger(this.getClass());
+	@Override
+	public SwitchCondition build(Object[] objects) throws Exception {
+		OperatorHelper.checkObjectSizeEqOne(objects);
 
-    @Override
-    public SwitchCondition executeInner(Object[] objects) throws Exception {
-        try {
-            if (ArrayUtil.isEmpty(objects)) {
-                throw new QLException("parameter is empty");
-            }
+		OperatorHelper.checkObjMustBeSwitchTypeItem(objects[0]);
+		Node switchNode = OperatorHelper.convert(objects[0], Node.class);
 
-            if (objects.length != 1) {
-                throw new QLException("parameter error");
-            }
+		SwitchCondition switchCondition = new SwitchCondition();
+		switchCondition.setSwitchNode(switchNode);
 
-            Node switchNode;
-            if (objects[0] instanceof Node) {
-                switchNode = (Node) objects[0];
+		return switchCondition;
+	}
 
-                if (!ListUtil.toList(NodeTypeEnum.SWITCH, NodeTypeEnum.SWITCH_SCRIPT).contains(switchNode.getType())) {
-                    throw new QLException("The caller must be Switch item");
-                }
-            } else {
-                throw new QLException("The caller must be Switch item");
-            }
-
-            SwitchCondition switchCondition = new SwitchCondition();
-            switchCondition.setSwitchNode(switchNode);
-
-            return switchCondition;
-        }catch (QLException e){
-            throw e;
-        }catch (Exception e){
-            throw new ELParseException("errors occurred in EL parsing");
-        }
-    }
 }
